@@ -1,0 +1,9 @@
+## Interface: 20400
+## Title: Bartcraft Tooltips
+## Notes: Bartcraft custom item-set tooltip replacements.
+## Author: Bartcraft
+## Version: 1.0.0
+## SavedVariables: BartcraftTooltipsDB
+
+Sets.lua
+Core.lua
