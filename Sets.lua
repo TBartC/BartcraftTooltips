@@ -53,6 +53,55 @@ BartcraftTooltipSets = {
         },
     },
     {
+        key = "wrath_bladestorm",
+        originalName = "Battlegear of Wrath",
+        displayName = "Wrath of the Blade Master",
+
+        items = {
+            16959, 16960, 16961, 16962,
+            16963, 16964, 16965, 16966,
+        },
+
+        itemNames = {
+            "Bracelets of Wrath",
+            "Waistband of Wrath",
+            "Pauldrons of Wrath",
+            "Legplates of Wrath",
+            "Helm of Wrath",
+            "Gauntlets of Wrath",
+            "Sabatons of Wrath",
+            "Breastplate of Wrath",
+        },
+
+        stockItemNames = {
+            "Bracelets of Wrath",
+            "Waistband of Wrath",
+            "Pauldrons of Wrath",
+            "Legplates of Wrath",
+            "Helm of Wrath",
+            "Gauntlets of Wrath",
+            "Sabatons of Wrath",
+            "Breastplate of Wrath",
+        },
+
+        bonuses = {
+            {
+                pieces = 3,
+                text = "Increases the damage you deal with two-handed melee weapons by 2%.",
+            },
+            {
+                pieces = 5,
+                text = "20% chance after using an offensive ability requiring Rage that your next offensive ability requires 5 less Rage to use.",
+            },
+            {
+                pieces = 8,
+                spellId = 23548,
+                spellNameId = 9632,
+                text = "Whirlwind also unleashes Bladestorm for 9 sec, striking nearby enemies every 3 sec. This effect can occur once every 30 sec.",
+            },
+        },
+    },
+    {
         key = "dragon_fangs",
         originalName = "Spider's Kiss",
         displayName = "Corrupted Fangs of the Fallen",
