@@ -33,6 +33,7 @@ local function BuildIndexes()
     for _, setData in ipairs(BartcraftTooltipSets or {}) do
         setData.itemLookup = {}
         setData.memberLookup = {}
+        setData.hiddenMemberLookup = {}
 
         for index, itemId in ipairs(setData.items or {}) do
             setData.itemLookup[itemId] = true
@@ -58,6 +59,21 @@ local function BuildIndexes()
             else
                 AddMemberLookupName(setData, stockNames, member)
             end
+        end
+
+        -- Some stock DBC sets contain members that Bartcraft intentionally
+        -- excludes from the visible custom set, such as Ring of the Dreadnaught.
+        for _, hiddenName in ipairs(setData.hiddenMemberNames or {}) do
+            hiddenName = Trim(hiddenName)
+            if hiddenName and hiddenName ~= "" then
+                setData.hiddenMemberLookup[hiddenName] = true
+            end
+        end
+
+        -- Tooltip-only items can still use this set's rewritten tooltip block,
+        -- but they are not included in itemLookup and therefore never count.
+        for _, tooltipItemId in ipairs(setData.tooltipItems or {}) do
+            itemToSet[tooltipItemId] = setData
         end
     end
 end
@@ -172,7 +188,17 @@ local function ReplaceSetBlock(tooltip, setData)
             local text = Trim(left:GetText())
             local member = text and setData.memberLookup[text]
 
-            if member then
+            if text and setData.hiddenMemberLookup
+                and setData.hiddenMemberLookup[text] then
+
+                -- Hide stock DBC members that are not part of the Bartcraft set.
+                left:SetText("")
+
+                local right = getglobal(tooltipName .. "TextRight" .. i)
+                if right then
+                    right:SetText("")
+                end
+            elseif member then
                 -- Change only the member name. Preserve Blizzard's existing
                 -- set-member color: pale gold when equipped, gray when missing.
                 left:SetText(member.displayName)
