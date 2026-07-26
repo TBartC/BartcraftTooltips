@@ -12,7 +12,7 @@
 local DRAGONHAWK_ICON = "Interface\\Icons\\Ability_Hunter_Pet_DragonHawk"
 
 BartcraftMountOverrides = BartcraftMountOverrides or {}
-BartcraftMountOverrideVersion = "2.3.0"
+BartcraftMountOverrideVersion = "2.4.0"
 
 -- ---------------------------------------------------------------------------
 -- Mount registry
@@ -576,6 +576,85 @@ local function InstallBuffHooks()
 end
 
 -- ---------------------------------------------------------------------------
+-- Other-unit aura overrides
+--
+-- TargetFrame and compatible unit-frame addons obtain another unit's aura
+-- name and icon through UnitBuff(). Their hover tooltips use
+-- GameTooltip:SetUnitBuff(). Wrap those read-only presentation APIs so every
+-- player with BartcraftTooltips sees registered custom mounts correctly on
+-- other mounted players.
+-- ---------------------------------------------------------------------------
+
+local originalUnitBuff = nil
+local originalSetUnitBuff = nil
+local unitAuraApiOverridesInstalled = false
+
+local function GetMountFromUnitBuff(unit, index, filter)
+    if not originalUnitBuff or not unit or not index then return nil end
+
+    local auraName = originalUnitBuff(unit, index, filter)
+    if not auraName then return nil end
+
+    return auraNameToMount[auraName]
+end
+
+local function RewriteUnitBuffTooltip(tooltip, unit, index, filter)
+    if not tooltip then return end
+
+    local mountData = GetMountFromUnitBuff(unit, index, filter)
+    if not mountData then return end
+
+    tooltip:ClearLines()
+    tooltip:AddLine(mountData.buffName, 1.00, 0.82, 0.00)
+    tooltip:AddLine(mountData.buffText, 1.00, 1.00, 1.00, true)
+    tooltip:Show()
+end
+
+local function InstallUnitAuraApiOverrides()
+    if unitAuraApiOverridesInstalled then return end
+    unitAuraApiOverridesInstalled = true
+
+    -- TBC UnitBuff returns:
+    -- name, rank, icon, count, duration, timeLeft
+    -- Preserve every gameplay value and replace only the visible name/icon.
+    if UnitBuff then
+        originalUnitBuff = UnitBuff
+
+        UnitBuff = function(unit, index, filter)
+            local name, rank, icon, count, duration, timeLeft =
+                originalUnitBuff(unit, index, filter)
+
+            local mountData = name and auraNameToMount[name]
+
+            if mountData then
+                return mountData.buffName, rank, mountData.icon, count, duration, timeLeft
+            end
+
+            return name, rank, icon, count, duration, timeLeft
+        end
+    end
+
+    -- TargetFrameBuff buttons repeatedly call SetUnitBuff while hovered.
+    -- Reapply the Bartcraft tooltip after the stock tooltip is populated.
+    if GameTooltip and GameTooltip.SetUnitBuff then
+        originalSetUnitBuff = GameTooltip.SetUnitBuff
+
+        GameTooltip.SetUnitBuff = function(self, unit, index, filter)
+            local result = originalSetUnitBuff(self, unit, index, filter)
+            RewriteUnitBuffTooltip(self, unit, index, filter)
+            return result
+        end
+    end
+
+    BartcraftMountUnitAuraApiOverrideInstalled = true
+
+    -- Refresh an already-selected target immediately after /reload.
+    if UnitExists and UnitExists("target") and TargetDebuffButton_Update then
+        TargetDebuffButton_Update()
+    end
+end
+
+-- ---------------------------------------------------------------------------
 -- BartcraftMounts custom Mount Collection overrides
 -- ---------------------------------------------------------------------------
 
@@ -673,6 +752,7 @@ BuildAuraNameLookup()
 InstallNativeSpellbookHooks()
 InstallActionBarHooks()
 InstallBuffHooks()
+InstallUnitAuraApiOverrides()
 InstallMountCollectionHook()
 
 -- BartcraftMounts may load before or after BartcraftTooltips. ADDON_LOADED
