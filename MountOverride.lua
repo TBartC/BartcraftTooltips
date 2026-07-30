@@ -77,6 +77,91 @@ BartcraftMountOverrides[36031] = {
     },
 }
 
+BartcraftMountOverrides[24576] = {
+    spellBookName = "Obsidian Drake",
+    buffName = "Obsidian Drake",
+    icon = "Interface\\Icons\\INV_Misc_Head_Dragon_Black",
+    castText = "3 sec cast",
+    description = "Summons and dismisses a rideable Obsidian Drake. This is a very fast mount.",
+    buffText = "Increases movement speed by 100%.",
+    auraNames = {
+        "Obsidian Drake",
+        "Summon Obsidian Drake",
+        "Chromatic Mount",
+    },
+}
+
+BartcraftMountOverrides[42929] = {
+    spellBookName = "Azure Drake",
+    buffName = "Azure Drake",
+    icon = "Interface\\Icons\\INV_Misc_Head_Dragon_Blue",
+    castText = "3 sec cast",
+    description = "Summons and dismisses a rideable Azure Drake. This is a very fast mount.",
+    buffText = "Increases movement speed by 100%.",
+    auraNames = {
+        "Azure Drake",
+        "Summon Azure Drake",
+        "[DNT] Test Mount",
+    },
+}
+
+BartcraftMountOverrides[39910] = {
+    spellBookName = "Emerald Drake",
+    buffName = "Emerald Drake",
+    icon = "Interface\\Icons\\INV_Misc_Head_Dragon_Green",
+    castText = "3 sec cast",
+    description = "Summons and dismisses a rideable Emerald Drake. This is a very fast mount.",
+    buffText = "Increases movement speed by 100%.",
+    auraNames = {
+        "Emerald Drake",
+        "Summon Emerald Drake",
+        "Riding Clefthoof",
+    },
+}
+
+BartcraftMountOverrides[16082] = {
+    spellBookName = "Ruby Drake",
+    buffName = "Ruby Drake",
+    icon = "Interface\\Icons\\INV_Misc_Head_Dragon_01",
+    castText = "3 sec cast",
+    description = "Summons and dismisses a rideable Ruby Drake. This is a very fast mount.",
+    buffText = "Increases movement speed by 100%.",
+    auraNames = {
+        "Ruby Drake",
+        "Summon Ruby Drake",
+        "Palomino Stallion",
+    },
+}
+
+BartcraftMountOverrides[39450] = {
+    spellBookName = "Bronze Drake",
+    buffName = "Bronze Drake",
+    icon = "Interface\\Icons\\INV_Misc_Head_Dragon_Bronze",
+    castText = "3 sec cast",
+    description = "Summons and dismisses a rideable Bronze Drake. This is a very fast mount.",
+    buffText = "Increases movement speed by 100%.",
+    auraNames = {
+        "Bronze Drake",
+        "Summon Bronze Drake",
+        "Tallstrider",
+    },
+}
+
+BartcraftMountOverrides[10804] = {
+    spellBookName = "Chromatic Drake",
+    buffName = "Chromatic Drake",
+    icon = "Interface\\Icons\\INV_Misc_Head_Dragon_Red",
+    castText = "3 sec cast",
+    description = "Summons and dismisses a rideable Chromatic Drake. This is a very fast mount.",
+    buffText = "Increases movement speed by 100%.",
+    auraNames = {
+        "Chromatic Drake",
+        "Summon Chromatic Drake",
+        "Summon Turquoise Tallstrider",
+        "Turquoise Tallstrider",
+    },
+}
+
 -- ---------------------------------------------------------------------------
 -- Internal state
 -- ---------------------------------------------------------------------------
@@ -745,10 +830,94 @@ local function InstallMountCollectionHook()
 end
 
 -- ---------------------------------------------------------------------------
+-- Mount item inventory icon overrides
+--
+-- The 2.4.3 client normally obtains bag-item icons from its client-side item
+-- data. These wrappers change presentation only and leave the real item,
+-- stack count, lock state, quality, and all server behavior untouched.
+-- ---------------------------------------------------------------------------
+
+local BartcraftMountItemIcons = {
+    [1029] = "Interface\\Icons\\INV_Misc_Head_Dragon_01",
+    [823]  = "Interface\\Icons\\INV_Misc_Head_Dragon_Bronze",
+    [1030] = "Interface\\Icons\\INV_Misc_Head_Dragon_Red",
+    [842]  = "Interface\\Icons\\INV_Misc_Head_Dragon_Blue",
+}
+
+local originalGetContainerItemInfo = nil
+local originalGetItemIcon = nil
+local itemIconOverridesInstalled = false
+
+local function ExtractItemId(link)
+    if not link then return nil end
+
+    local _, _, itemId = string.find(link, "item:(%d+)")
+    return tonumber(itemId)
+end
+
+local function GetCustomItemIcon(itemId)
+    itemId = tonumber(itemId)
+
+    if not itemId then
+        return nil
+    end
+
+    return BartcraftMountItemIcons[itemId]
+end
+
+local function InstallItemIconOverrides()
+    if itemIconOverridesInstalled then return end
+    itemIconOverridesInstalled = true
+
+    -- Bags, backpack, bank containers, and compatible bag addons.
+    if GetContainerItemInfo and GetContainerItemLink then
+        originalGetContainerItemInfo = GetContainerItemInfo
+
+        GetContainerItemInfo = function(bag, slot)
+            local texture, count, locked, quality, readable =
+                originalGetContainerItemInfo(bag, slot)
+
+            local itemLink = GetContainerItemLink(bag, slot)
+            local itemId = ExtractItemId(itemLink)
+            local customIcon = GetCustomItemIcon(itemId)
+
+            if customIcon then
+                texture = customIcon
+            end
+
+            return texture, count, locked, quality, readable
+        end
+    end
+
+    -- Other UI elements or addons that ask directly for an item's icon.
+    if GetItemIcon then
+        originalGetItemIcon = GetItemIcon
+
+        GetItemIcon = function(item)
+            local itemId = tonumber(item)
+
+            if not itemId and type(item) == "string" then
+                itemId = ExtractItemId(item)
+            end
+
+            local customIcon = GetCustomItemIcon(itemId)
+
+            if customIcon then
+                return customIcon
+            end
+
+            return originalGetItemIcon(item)
+        end
+    end
+
+    BartcraftMountItemIconOverridesInstalled = true
+end
+-- ---------------------------------------------------------------------------
 -- Initialization
 -- ---------------------------------------------------------------------------
 
 BuildAuraNameLookup()
+InstallItemIconOverrides()
 InstallNativeSpellbookHooks()
 InstallActionBarHooks()
 InstallBuffHooks()
@@ -770,6 +939,7 @@ eventFrame:SetScript("OnEvent", function()
             InstallMountCollectionHook()
         end
     elseif event == "PLAYER_LOGIN" then
+        InstallItemIconOverrides()
         InstallActionBarHooks()
         InstallMountCollectionHook()
     elseif event == "SPELLS_CHANGED" or event == "LEARNED_SPELL_IN_TAB" then
