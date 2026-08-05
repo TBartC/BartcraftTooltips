@@ -12,7 +12,7 @@
 local DRAGONHAWK_ICON = "Interface\\Icons\\Ability_Hunter_Pet_DragonHawk"
 
 BartcraftMountOverrides = BartcraftMountOverrides or {}
-BartcraftMountOverrideVersion = "2.4.0"
+BartcraftMountOverrideVersion = "2.5.0"
 
 -- ---------------------------------------------------------------------------
 -- Mount registry
@@ -161,7 +161,83 @@ BartcraftMountOverrides[10804] = {
         "Turquoise Tallstrider",
     },
 }
+-- ---------------------------------------------------------------------------
+-- Bartcraft utility companions
+-- ---------------------------------------------------------------------------
 
+-- Repair Bot 111-B
+-- Original spell: Summon Corrupted Kitten
+BartcraftMountOverrides[15648] = {
+    spellBookName = "Repair Bot 111-B",
+    buffName = "Repair Bot 111-B",
+    icon = "Interface\\Icons\\INV_Misc_EngGizmos_01",
+    castText = "Instant cast",
+    description = "Summons and dismisses Repair Bot 111-B, your portable repair companion.",
+    buffText = "Repair Bot 111-B is ready to repair your equipment.",
+    auraNames = {
+        "Repair Bot 111-B",
+        "Repair bot 111-B",
+        "Summon Repair Bot 111-B",
+        "Corrupted Kitten",
+        "Summon Corrupted Kitten",
+    },
+}
+
+
+-- Lil Bar'ter
+-- Original spell: Summon Ethereal Soul-Trader
+BartcraftMountOverrides[49964] = {
+    spellBookName = "Lil Bar'ter",
+    buffName = "Lil Bar'ter",
+    icon = "Interface\\Icons\\Spell_Nature_GroundingTotem",
+    castText = "Instant cast",
+    description = "Summons and dismisses Lil Bar'ter, your mobile Bartcraft emissary.",
+    buffText = "Lil Bar'ter is ready to trade.",
+    auraNames = {
+        "Lil Bar'ter",
+        "Summon Lil Bar'ter",
+        "Ethereal Soul-Trader",
+        "Ethereal Soul Trader",
+        "Summon Ethereal Soul-Trader",
+        "Summon Ethereal Soul Trader",
+    },
+}
+
+
+-- Auctionbot
+-- Original spell: Summon Murki
+BartcraftMountOverrides[25018] = {
+    spellBookName = "Auctionbot",
+    buffName = "Auctionbot",
+    icon = "Interface\\Icons\\INV_Misc_EngGizmos_RocketChicken",
+    castText = "Instant cast",
+    description = "Summons and dismisses Auctionbot, your portable auction house.",
+    buffText = "Auctionbot is ready to access the auction house.",
+    auraNames = {
+        "Auctionbot",
+        "Summon Auctionbot",
+        "Murki",
+        "Summon Murki",
+    },
+}
+
+
+-- Pack Mule
+-- Original spell: Summon Murky
+BartcraftMountOverrides[24696] = {
+    spellBookName = "Pack Mule",
+    buffName = "Pack Mule",
+    icon = "Interface\\Icons\\Ability_Mount_RidingHorse",
+    castText = "Instant cast",
+    description = "Summons and dismisses Pack Mule, your mobile bank.",
+    buffText = "Pack Mule is ready to provide access to your bank.",
+    auraNames = {
+        "Pack Mule",
+        "Summon Pack Mule",
+        "Murky",
+        "Summon Murky",
+    },
+}
 -- ---------------------------------------------------------------------------
 -- Internal state
 -- ---------------------------------------------------------------------------
@@ -838,14 +914,22 @@ end
 -- ---------------------------------------------------------------------------
 
 local BartcraftMountItemIcons = {
-    [1029] = "Interface\\Icons\\INV_Misc_Head_Dragon_01",
-    [823]  = "Interface\\Icons\\INV_Misc_Head_Dragon_Bronze",
-    [1030] = "Interface\\Icons\\INV_Misc_Head_Dragon_Red",
-    [842]  = "Interface\\Icons\\INV_Misc_Head_Dragon_Blue",
+    -- Custom drake items
+    [1029]  = "Interface\\Icons\\INV_Misc_Head_Dragon_01",
+    [823]   = "Interface\\Icons\\INV_Misc_Head_Dragon_Bronze",
+    [1030]  = "Interface\\Icons\\INV_Misc_Head_Dragon_Red",
+    [842]   = "Interface\\Icons\\INV_Misc_Head_Dragon_Blue",
+
+    -- Bartcraft companion items
+    [11903] = "Interface\\Icons\\INV_Misc_EngGizmos_01",          -- Repair Bot 111-B
+    [38050] = "Interface\\Icons\\Spell_Nature_GroundingTotem",   -- Lil Bar'ter
+    [20651] = "Interface\\Icons\\INV_Misc_EngGizmos_RocketChicken", -- Auctionbot
+    [20371] = "Interface\\Icons\\Ability_Mount_RidingHorse",     -- Pack Mule
 }
 
 local originalGetContainerItemInfo = nil
 local originalGetItemIcon = nil
+local originalGetMerchantItemInfo = nil
 local itemIconOverridesInstalled = false
 
 local function ExtractItemId(link)
@@ -910,7 +994,31 @@ local function InstallItemIconOverrides()
         end
     end
 
+    -- Stock vendor windows.
+    -- TBC GetMerchantItemInfo returns:
+    -- name, texture, price, quantity, numAvailable, isUsable, extendedCost
+    if GetMerchantItemInfo and GetMerchantItemLink then
+        originalGetMerchantItemInfo = GetMerchantItemInfo
+
+        GetMerchantItemInfo = function(index)
+            local name, texture, price, quantity, numAvailable, isUsable, extendedCost =
+                originalGetMerchantItemInfo(index)
+
+            local itemLink = GetMerchantItemLink(index)
+            local itemId = ExtractItemId(itemLink)
+            local customIcon = GetCustomItemIcon(itemId)
+
+            if customIcon then
+                texture = customIcon
+            end
+
+            return name, texture, price, quantity, numAvailable, isUsable, extendedCost
+        end
+    end
+
     BartcraftMountItemIconOverridesInstalled = true
+    BartcraftMountMerchantIconOverrideInstalled =
+        originalGetMerchantItemInfo ~= nil
 end
 -- ---------------------------------------------------------------------------
 -- Initialization
